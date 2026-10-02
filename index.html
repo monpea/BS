@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CIVATIS 각성자/시민 아카이브</title>
+<style>
+  :root{
+    --accent:#0064ff;
+    --code:#5b5f76;
+    --ability:#b3b4ca;
+    --panel:#15171b;
+    --panel2:#1d2025;
+    --line:#30343c;
+    --text:#f5f5f5;
+    --muted:#a7abb4;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%;background:#0d0f12;color:var(--text);font-family:Arial,"Noto Sans KR",sans-serif}
+  body{padding:22px}
+  .app{max-width:1500px;margin:0 auto}
+  h1{font-size:22px;margin:0 0 16px;font-weight:700;letter-spacing:-.03em}
+  .workspace{display:grid;grid-template-columns:320px minmax(0,1fr);gap:18px;align-items:start}
+  .controls{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:16px;
+    position:sticky;top:16px;
+  }
+  .section{padding-bottom:16px;margin-bottom:16px;border-bottom:1px solid var(--line)}
+  .section:last-child{border-bottom:0;margin-bottom:0;padding-bottom:0}
+  .section-title{font-size:12px;color:var(--muted);letter-spacing:.08em;margin-bottom:10px;font-weight:700}
+  label{display:block;font-size:12px;color:#c8cbd1;margin:9px 0 5px}
+  input[type=text], textarea, select{
+    width:100%;border:1px solid #383d46;background:var(--panel2);color:#fff;
+    border-radius:7px;padding:9px 10px;font:inherit;font-size:13px;outline:none;
+  }
+  input[type=text]:focus, textarea:focus, select:focus{border-color:#68707e}
+  textarea{min-height:72px;resize:vertical;line-height:1.45}
+  input[type=file]{width:100%;font-size:12px;color:#c8cbd1}
+  input[type=range]{width:100%;accent-color:var(--accent)}
+  .range-row{display:grid;grid-template-columns:1fr 58px;gap:8px;align-items:center}
+  .range-value{font-size:12px;color:#c8cbd1;text-align:right}
+  .hint{font-size:11px;color:#80858f;line-height:1.5;margin-top:7px}
+  .preview-wrap{min-width:0}
+  .stage-shell{
+    width:100%;background:#0b0d10;border:1px solid var(--line);border-radius:12px;padding:12px;
+  }
+  .stage{
+    width:100%;aspect-ratio:2048/853;position:relative;overflow:hidden;
+    background:#111;user-select:none;touch-action:none;
+  }
+  .layer{position:absolute;inset:0}
+  .background-layer{
+    background-position:center;background-size:cover;background-repeat:no-repeat;
+    z-index:1;
+  }
+  .person-layer{z-index:2;overflow:hidden}
+  .person{
+    position:absolute;left:50%;top:50%;transform-origin:center center;
+    max-width:none;display:none;cursor:grab;user-select:none;-webkit-user-drag:none;
+  }
+  .person.dragging{cursor:grabbing}
+  .text-layer{z-index:3;pointer-events:none}
+  .border-layer{z-index:4;pointer-events:none}
+  .border{
+    position:absolute;inset:0;border:3px solid var(--accent);
+  }
+  .t{
+    position:absolute;white-space:pre-wrap;
+    color:#fff;line-height:1.15;
+  }
+  .code-label{
+    left:45.7%;top:7.1%;font:700 19.6px/1 Georgia,"Times New Roman",serif;
+    color:var(--code);letter-spacing:-.03em;
+  }
+  .codename{
+    left:45.5%;top:12.5%;font:900 clamp(39.6px,5.49vw,113.4px)/.9 Arial,sans-serif;
+    letter-spacing:-.055em;color:#fff;
+  }
+  .realname{
+    right:7.0%;top:calc(35% - 2px);font:800 clamp(20.8px,1.88vw,38.4px)/1 Arial,"Noto Sans KR",sans-serif;
+    letter-spacing:-.045em;text-align:right;
+  }
+  .info{
+    left:48.7%;top:47.0%;font-weight:400;font-size:clamp(13.5px,1.395vw,28.8px);
+    letter-spacing:-.055em;
+  }
+  .row{position:absolute;left:0;display:flex;align-items:baseline;white-space:nowrap}
+  .row .label{font-weight:800;margin:0 34.2px 0 0;letter-spacing:-.07em}
+  .row .value{font-weight:400}
+  .row1{top:0}.row2{top:1.575em}.row3{top:3.15em}
+  .ability-value{
+    display:block;
+    font-weight:400;
+  }
+  .ability-value > #abilityNameText{
+    display:block;
+    color:#fff;
+    font-weight:400;
+    line-height:1.15;
+  }
+  .ability-desc{
+    display:block;
+    width:375%;
+    max-width:375%;
+    margin-top:.12em;
+    color:var(--ability);
+    white-space:pre-wrap;
+    font-weight:400;
+    line-height:1.26;
+    padding:0;
+  }
+  .download-btn{
+    width:100%;border:1px solid #4a505b;background:#f2f3f5;color:#11151a;
+    border-radius:8px;padding:11px 12px;font:700 13px/1.2 Arial,"Noto Sans KR",sans-serif;
+    cursor:pointer;transition:filter .15s,transform .05s;
+  }
+  .download-btn:hover{filter:brightness(.94)}
+  .download-btn:active{transform:translateY(1px)}
+  .download-btn:disabled{opacity:.55;cursor:wait}
+  .export-section .hint:empty{display:none}
+
+  @media(max-width:900px){
+    body{padding:10px}
+    .app{max-width:100%}
+    h1{font-size:18px;margin-bottom:10px}
+    .workspace{display:flex;flex-direction:column;gap:10px}
+    .preview-wrap{order:1;width:100%}
+    .controls{order:2;position:static;padding:12px;border-radius:10px}
+    .stage-shell{padding:6px;border-radius:9px}
+    .section{padding-bottom:13px;margin-bottom:13px}
+    .section-title{font-size:11px;margin-bottom:8px}
+    input[type=text], textarea, select{padding:8px 9px}
+    .download-btn{padding:12px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>CIVATIS 각성자/시민 아카이브</h1>
+
+  <div class="workspace">
+    <aside class="controls">
+      <div class="section">
+        <div class="section-title">소속</div>
+        <label for="affiliation">소속</label>
+        <select id="affiliation">
+          <option value="cadence">카덴차 Cadence</option>
+          <option value="nectar">넥타르 Nectar</option>
+          <option value="bureau">각성관리국</option>
+        </select>
+        <label for="rank">직급</label>
+        <input id="rank" type="text" placeholder="생략 가능">
+      </div>
+
+      <div class="section">
+        <div class="section-title">인물</div>
+        <label for="personFile">인물 이미지</label>
+        <input id="personFile" type="file" accept="image/*">
+        <div class="hint">업로드한 이미지를 미리보기에서 드래그해 위치를 조절할 수 있습니다.</div>
+
+        <label for="scale">크기</label>
+        <div class="range-row">
+          <input id="scale" type="range" min="20" max="220" value="100" step="1">
+          <div id="scaleValue" class="range-value">100%</div>
+        </div>
+
+        <label for="posX">가로 위치</label>
+        <div class="range-row">
+          <input id="posX" type="range" min="-100" max="100" value="0" step="1">
+          <div id="posXValue" class="range-value">0</div>
+        </div>
+
+        <label for="posY">세로 위치</label>
+        <div class="range-row">
+          <input id="posY" type="range" min="-100" max="100" value="0" step="1">
+          <div id="posYValue" class="range-value">0</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">텍스트</div>
+        <label for="codenameInput">코드네임</label>
+        <input id="codenameInput" type="text" value="PHANTOM">
+
+        <label for="realnameInput">본명</label>
+        <input id="realnameInput" type="text" value="서천우">
+
+        <label for="infoInput">정보</label>
+        <input id="infoInput" type="text" value="31세 남성 182cm">
+
+        <label for="abilityNameInput">능력 이름</label>
+        <input id="abilityNameInput" type="text" value="미메시스" placeholder="생략 가능">
+
+        <label for="abilityDescInput">능력 설명</label>
+        <textarea id="abilityDescInput" placeholder="생략 가능">무엇이든 손끝으로 조각.
+발동 시 투명 차폐막 형성.</textarea>
+      </div>
+
+      <div class="section export-section">
+        <div class="section-title">이미지 저장</div>
+        <button id="downloadBtn" class="download-btn" type="button">PNG 이미지 다운로드</button>
+        <div id="downloadStatus" class="hint" aria-live="polite"></div>
+      </div>
+    </aside>
+
+    <main class="preview-wrap">
+      <div class="stage-shell">
+        <div id="stage" class="stage">
+          <!-- Layer 1: background -->
+          <div id="backgroundLayer" class="layer background-layer"></div>
+
+          <!-- Layer 2: person -->
+          <div id="personLayer" class="layer person-layer">
+            <img id="person" class="person" alt="">
+          </div>
+
+          <!-- Layer 3: text -->
+          <div class="layer text-layer">
+            <div id="codeLabel" class="t code-label">CODE NAME</div>
+            <div id="codename" class="t codename">PHANTOM</div>
+            <div id="realname" class="t realname">서천우</div>
+
+            <div class="t info">
+              <div class="row row1"><span class="label">소속</span><span id="affiliationText" class="value">카덴차 Cadence 수장</span></div>
+              <div class="row row2"><span class="label">정보</span><span id="infoText" class="value">31세 남성 182cm</span></div>
+              <div class="row row3">
+                <span class="label">이능</span>
+                <span class="value ability-value">
+                  <span id="abilityNameText">미메시스</span>
+                  <span id="abilityDescText" class="ability-desc">무엇이든 손끝으로 조각.
+발동 시 투명 차폐막 형성.</span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Layer 4: border -->
+          <div class="layer border-layer">
+            <div class="border"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script>
+(() => {
+  const themes = {
+    cadence: {
+      bg: 'https://raw.githubusercontent.com/monpea/BS/refs/heads/main/L5.png',
+      accent: '#0064ff',
+      code: '#5b5f76',
+      ability: '#b3b4ca',
+      label: '카덴차 Cadence'
+    },
+    bureau: {
+      bg: 'https://raw.githubusercontent.com/monpea/BS/refs/heads/main/L3.png',
+      accent: '#d5994b',
+      code: '#76685b',
+      ability: '#cabab3',
+      label: '각성관리국'
+    },
+    nectar: {
+      bg: 'https://raw.githubusercontent.com/monpea/BS/refs/heads/main/L2.png',
+      accent: '#b9291f',
+      code: '#76685b',
+      ability: '#cabab3',
+      label: '넥타르 Nectar'
+    }
+  };
+
+  const root = document.documentElement;
+  const $ = id => document.getElementById(id);
+
+  const affiliation = $('affiliation');
+  const rank = $('rank');
+  const personFile = $('personFile');
+  const scale = $('scale'), posX = $('posX'), posY = $('posY');
+  const scaleValue = $('scaleValue'), posXValue = $('posXValue'), posYValue = $('posYValue');
+  const person = $('person'), stage = $('stage');
+
+  const codenameInput = $('codenameInput'), realnameInput = $('realnameInput');
+  const infoInput = $('infoInput'), abilityNameInput = $('abilityNameInput'), abilityDescInput = $('abilityDescInput');
+  const downloadBtn = $('downloadBtn'), downloadStatus = $('downloadStatus');
+
+  let objectUrl = null;
+  let naturalW = 0, naturalH = 0;
+  let drag = null;
+
+  function applyTheme() {
+    const t = themes[affiliation.value];
+    root.style.setProperty('--accent', t.accent);
+    root.style.setProperty('--code', t.code);
+    root.style.setProperty('--ability', t.ability);
+    $('backgroundLayer').style.backgroundImage = `url("${t.bg}")`;
+
+    let affiliationText = t.label;
+    const r = rank.value.trim();
+    if (r) affiliationText += ' ' + r;
+    $('affiliationText').textContent = affiliationText;
+  }
+
+  function updateText() {
+    $('codename').textContent = codenameInput.value;
+    $('realname').textContent = realnameInput.value;
+    $('infoText').textContent = infoInput.value;
+    $('abilityNameText').textContent = abilityNameInput.value;
+    $('abilityDescText').textContent = abilityDescInput.value;
+    $('abilityDescText').style.display = abilityDescInput.value.trim() ? 'block' : 'none';
+  }
+
+  function updatePerson() {
+    const s = Number(scale.value) / 100;
+    const x = Number(posX.value);
+    const y = Number(posY.value);
+    person.style.left = `${50 + x}%`;
+    person.style.top = `${50 + y}%`;
+    person.style.transform = `translate(-50%, -50%) scale(${s})`;
+    scaleValue.textContent = `${Math.round(s*100)}%`;
+    posXValue.textContent = Math.round(x);
+    posYValue.textContent = Math.round(y);
+  }
+
+  function fitUploadedPerson(resetControls = false) {
+    if (!naturalW || !naturalH) return;
+    const rect = stage.getBoundingClientRect();
+    // Base size fits the image to the card height, preserving its original aspect ratio.
+    const fittedH = rect.height;
+    const fittedW = naturalW * (fittedH / naturalH);
+    person.style.width = `${fittedW}px`;
+    person.style.height = `${fittedH}px`;
+    person.style.display = 'block';
+    if (resetControls) {
+      scale.value = 100;
+      posX.value = 0;
+      posY.value = 0;
+    }
+    updatePerson();
+  }
+
+  async function downloadCard() {
+    if (typeof html2canvas !== 'function') {
+      downloadStatus.textContent = '이미지 저장 기능을 불러오지 못했습니다. 페이지를 새로고침해 주세요.';
+      return;
+    }
+
+    downloadBtn.disabled = true;
+    downloadStatus.textContent = '이미지를 만드는 중…';
+
+    try {
+      // Always export at approximately 2048px wide, regardless of the screen size.
+      const rect = stage.getBoundingClientRect();
+      const exportScale = Math.max(2, 2048 / rect.width);
+      const canvas = await html2canvas(stage, {
+        backgroundColor: null,
+        useCORS: true,
+        allowTaint: false,
+        scale: exportScale,
+        width: rect.width,
+        height: rect.height,
+        logging: false
+      });
+
+      canvas.toBlob(blob => {
+        if (!blob) throw new Error('blob');
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const safeName = (codenameInput.value.trim() || 'CIVATIS_Archive').replace(/[\\/:*?"<>|]/g, '_');
+        a.href = url;
+        a.download = `${safeName}.png`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        downloadStatus.textContent = 'PNG 이미지가 저장되었습니다.';
+      }, 'image/png');
+    } catch (err) {
+      console.error(err);
+      downloadStatus.textContent = '저장에 실패했습니다. 배경 이미지가 아직 로딩 중이면 잠시 후 다시 시도해 주세요.';
+    } finally {
+      downloadBtn.disabled = false;
+    }
+  }
+
+  downloadBtn.addEventListener('click', downloadCard);
+
+  affiliation.addEventListener('change', applyTheme);
+  rank.addEventListener('input', applyTheme);
+  [codenameInput, realnameInput, infoInput, abilityNameInput, abilityDescInput].forEach(el => {
+    el.addEventListener('input', updateText);
+  });
+  [scale, posX, posY].forEach(el => el.addEventListener('input', updatePerson));
+
+  personFile.addEventListener('change', e => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (objectUrl) URL.revokeObjectURL(objectUrl);
+    objectUrl = URL.createObjectURL(file);
+    person.src = objectUrl;
+    person.onload = () => {
+      naturalW = person.naturalWidth;
+      naturalH = person.naturalHeight;
+      fitUploadedPerson(true);
+    };
+  });
+
+  function beginDrag(clientX, clientY) {
+    if (!person.src) return;
+    drag = {x: clientX, y: clientY, startX: Number(posX.value), startY: Number(posY.value)};
+    person.classList.add('dragging');
+  }
+  function moveDrag(clientX, clientY) {
+    if (!drag) return;
+    const rect = stage.getBoundingClientRect();
+    const dx = (clientX - drag.x) / rect.width * 100;
+    const dy = (clientY - drag.y) / rect.height * 100;
+    posX.value = Math.max(-100, Math.min(100, drag.startX + dx));
+    posY.value = Math.max(-100, Math.min(100, drag.startY + dy));
+    updatePerson();
+  }
+  function endDrag() {
+    if (!drag) return;
+    drag = null;
+    person.classList.remove('dragging');
+  }
+
+  person.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    person.setPointerCapture(e.pointerId);
+    beginDrag(e.clientX, e.clientY);
+  });
+  person.addEventListener('pointermove', e => moveDrag(e.clientX, e.clientY));
+  person.addEventListener('pointerup', endDrag);
+  person.addEventListener('pointercancel', endDrag);
+
+  window.addEventListener('resize', () => {
+    if (person.src) fitUploadedPerson(false);
+  });
+
+  applyTheme();
+  updateText();
+  updatePerson();
+})();
+</script>
+</body>
+</html>
